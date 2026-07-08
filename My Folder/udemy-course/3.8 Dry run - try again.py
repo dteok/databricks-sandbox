@@ -73,10 +73,10 @@ display(order_files)
 (spark.readStream
   .format("cloudFiles")
   .option("cloudFiles.format", "parquet")
-  .option("cloudFiles.schemaLocation", "dbfs:/mnt/demo/mymultihop/bronze_orders_raw_schema")
+  .option("cloudFiles.schemaLocation", f"{dataset_bookstore}/mymultihop/bronze_orders_raw_schema")
   .load(f"{dataset_bookstore}/orders-raw")
   .writeStream
-  .option("checkpointLocation", "dbfs:/mnt/demo/mymultihop/bronze_orders_raw")
+  .option("checkpointLocation", f"{dataset_bookstore}/mymultihop/bronze_orders_raw")
   .table("bronze_orders_raw")
 )
 
@@ -130,10 +130,10 @@ display(cust_files)
 (spark.readStream
   .format("cloudFiles")
   .option("cloudFiles.format", "json")
-  .option("cloudFiles.schemaLocation", "dbfs:/mnt/demo/mymultihop/bronze_customers_raw_schema")
+  .option("cloudFiles.schemaLocation", f"{dataset_bookstore}/mymultihop/bronze_customers_raw_schema")
   .load(f"{dataset_bookstore}/customers-json")
   .writeStream
-  .option("checkpointLocation", "dbfs:/mnt/demo/mymultihop/bronze_customers_raw")
+  .option("checkpointLocation", f"{dataset_bookstore}/mymultihop/bronze_customers_raw")
   .table("bronze_customers_raw")
 )
 
@@ -215,7 +215,7 @@ enriched_orders = orders_stream.join(
 
 # Write out to a temporary silver table
 (enriched_orders.writeStream
-   .option("checkpointLocation", "dbfs:/mnt/demo/mymultihop/silver_orders_cust_combined") ## checkpoint location. Should have updated it to .../demo/mymultihop/..
+   .option("checkpointLocation", f"{dataset_bookstore}/mymultihop/silver_orders_cust_combined") ## checkpoint location. Should have updated it to .../demo/mymultihop/..
    .table("orders_customers_combined")
 )
 
@@ -322,6 +322,25 @@ enriched_orders = orders_stream.join(
 # MAGIC Most of the heavy lifting should be done in the Silver layer.
 # MAGIC
 # MAGIC As far as this demo is concerned, we conclude here.
+
+# COMMAND ----------
+
+# MAGIC %sql
+# MAGIC SELECT
+# MAGIC   customer_id,
+# MAGIC   f_name,
+# MAGIC   l_name,
+# MAGIC   date_trunc("DD", order_timestamp) AS order_date,
+# MAGIC   SUM(quantity) AS books_counts
+# MAGIC FROM
+# MAGIC   orders_cleaned
+# MAGIC WHERE
+# MAGIC   country = 'France'
+# MAGIC GROUP BY
+# MAGIC   customer_id,
+# MAGIC   f_name,
+# MAGIC   l_name,
+# MAGIC   date_trunc("DD", order_timestamp)
 
 # COMMAND ----------
 

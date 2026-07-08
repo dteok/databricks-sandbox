@@ -9,7 +9,8 @@
 
 -- COMMAND ----------
 
-USE CATALOG hive_metastore
+USE CATALOG udemycourseworkspace;
+USE SCHEMA default;
 
 -- COMMAND ----------
 
@@ -69,7 +70,17 @@ DESCRIBE DETAIL employees
 
 -- COMMAND ----------
 
--- MAGIC %fs ls 'dbfs:/user/hive/warehouse/employees'
+-- MAGIC %md
+-- MAGIC ### Legacy code
+-- MAGIC %fs ls 'dbfs:/user/hive/warehouse/employees
+-- MAGIC
+-- MAGIC If on Azure Databricks, do not use above code.
+
+-- COMMAND ----------
+
+-- DESCRIBE DETAIL udemycourseworkspace.default.employees
+-- DESCRIBE udemycourseworkspace.default.employees
+DESCRIBE HISTORY udemycourseworkspace.default.employees
 
 -- COMMAND ----------
 

@@ -26,8 +26,11 @@ def download_dataset(source, target):
 # COMMAND ----------
 
 data_source_uri = "s3://dalhussein-courses/datasets/bookstore/v1/"
-dataset_bookstore = 'dbfs:/mnt/demo-datasets/bookstore'
-data_catalog = 'hive_metastore'
+# Commenting out as they are legacy DBFS paths
+# # dataset_bookstore = 'dbfs:/mnt/demo-datasets/bookstore'
+# data_catalog = 'hive_metastore'
+dataset_bookstore = "dbfs:/Volumes/udemycourseworkspace/default/bookstore_data"
+data_catalog = 'udemycourseworkspace'
 spark.conf.set(f"dataset.bookstore", dataset_bookstore)
 spark.conf.set("fs.s3a.endpoint", "s3.eu-west-3.amazonaws.com")
 spark.conf.set("fs.s3a.aws.credentials.provider", "org.apache.hadoop.fs.s3a.AnonymousAWSCredentialsProvider")
@@ -108,4 +111,5 @@ download_dataset(data_source_uri, dataset_bookstore)
 set_current_catalog(data_catalog)
 
 # COMMAND ----------
+
 

@@ -15,6 +15,11 @@
 
 # COMMAND ----------
 
+# MAGIC %sql
+# MAGIC SHOW VOLUMES
+
+# COMMAND ----------
+
 files = dbutils.fs.ls(f"{dataset_bookstore}/orders-raw")
 display(files)
 # we should have 3 files following from previous notebook 3.3
@@ -24,7 +29,8 @@ display(files)
 (spark.readStream
     .format("cloudFiles")
     .option("cloudFiles.format", "parquet")
-    .option("cloudFiles.schemaLocation", "dbfs:/mnt/demo/checkpoints/orders_raw")
+    # .option("cloudFiles.schemaLocation", "dbfs:/mnt/demo/checkpoints/orders_raw")
+    .option("cloudFiles.schemaLocation", f"{dataset_bookstore}/checkpoints/orders_raw")
     .load(f"{dataset_bookstore}/orders-raw")
     .createOrReplaceTempView("orders_raw_temp")
 )
@@ -49,10 +55,19 @@ display(files)
 # COMMAND ----------
 
 # MAGIC %sql
+# MAGIC -- This cell is now obsolete with Unity Catalog. Run cell directly below to see spark stream.
 # MAGIC -- let's check; NB. Dependent on above two cells. `orders_tmp` is a Spark stream session
 # MAGIC SELECT 
 # MAGIC   *
 # MAGIC FROM orders_tmp
+
+# COMMAND ----------
+
+# Define a safe scratch folder inside your secure Unity Catalog (UC) Volume
+preview_checkpoint = f"{dataset_bookstore}/checkpoints/interactive_preview"
+
+# Use display() and explicitly pass the checkpoint location parameter
+display(spark.table("orders_tmp"), checkpointLocation=preview_checkpoint)
 
 # COMMAND ----------
 
@@ -64,7 +79,7 @@ display(files)
 (spark.table("orders_tmp")
     .writeStream
     .format("delta")
-    .option("checkpointLocation", "dbfs:/mnt/demo/checkpoints/orders")
+    .option("checkpointLocation", f"{dataset_bookstore}/checkpoints/orders")
     .outputMode("append")
     .table("orders_bronze")
 )
@@ -76,6 +91,7 @@ display(files)
 
 # COMMAND ----------
 
+# trigger new file arrival
 load_new_data()
 
 # COMMAND ----------
@@ -147,7 +163,7 @@ load_new_data()
 (spark.table("orders_enriched_tmp") # READ FROM this table
     .writeStream 
     .format("delta")
-    .option("checkpointLocation", "dbfs:/mnt/demo/checkpoints/orders_silver")
+    .option("checkpointLocation", f"{dataset_bookstore}/checkpoints/orders_silver")
     .outputMode("append")
     .table("orders_silver") # WRITE TO this table
 )
@@ -197,8 +213,19 @@ load_new_data()
 
 # COMMAND ----------
 
+(spark.table("daily_customer_books_tmp")
+    .writeStream
+    .format("delta")
+    .outputMode("complete")
+    .option("checkpointLocation", f"{dataset_bookstore}/checkpoints/daily_customer_books")
+    .trigger(availableNow=True)
+    .table("daily_customer_books")
+)
+
+# COMMAND ----------
+
 # MAGIC %sql
-# MAGIC select * from daily_customer_books_tmp
+# MAGIC select * from daily_customer_books
 # MAGIC
 
 # COMMAND ----------
@@ -212,6 +239,11 @@ load_new_data()
 # display(chkpt_files)
 
 # dbutils.fs.rm("dbfs:/mnt/demo/checkpoints/daily_customer_books", recurse=True)
+
+chkpt_files = dbutils.fs.ls(f"{dataset_bookstore}/checkpoints/daily_customer_books")
+display(chkpt_files)
+
+# dbutils.fs.rm(f"{dataset_bookstore}/checkpoints/daily_customer_books", recurse=True)
 
 # COMMAND ----------
 
